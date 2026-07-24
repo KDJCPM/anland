@@ -1,0 +1,36 @@
+name: Build Patched KWin
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build in ARM64 container
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v ${{ github.workspace }}:/anland \
+            -w /anland \
+            debian:trixie bash -c "
+              apt-get update && apt-get install -y curl git sudo &&
+              cd /anland/producers/kde/ubuntu2604_v5 &&
+              chmod +x build.sh &&
+              ./build.sh
+            "
+
+      - name: Upload .deb packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: patched-kwin-debs
+          path: |
+            ~/anland-debbuild/kwin/*.deb
+            ~/anland-debbuild/xwayland/*.deb
+          if-no-files-found: warn

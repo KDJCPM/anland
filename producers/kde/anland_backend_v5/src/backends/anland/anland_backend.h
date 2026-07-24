@@ -117,6 +117,11 @@ private:
     bool m_consumerReady = false;
     bool m_inFallback = false;
 
+    // Retry counter for failed reconnections (prevents infinite loop on persistent
+    // EGL/dmabuf failures). Reset when consumer disconnects normally.
+    int m_reconnectFailCount = 0;
+    static constexpr int s_maxReconnectFails = 10;
+
     // Last known clipboard text — used to de-duplicate (KWin changed -> we sent ->
     // consumer sets the same text on Android -> consumer sends back to KWin).
     // QByteArray is trivially sent over the data channel as UTF-8.

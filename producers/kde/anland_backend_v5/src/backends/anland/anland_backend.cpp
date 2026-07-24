@@ -434,6 +434,7 @@ void AnlandBackend::enterFallback()
         return;
     }
     qCWarning(KWIN_ANLAND) << "consumer disconnected, entering fallback";
+    m_reconnectFailCount = 0;
 
     if (m_inputDevice) {
         m_inputDevice->touchCancel();
@@ -492,8 +493,23 @@ void AnlandBackend::onReconnectTimer()
     // balanced regardless of whether the GL layer is attached yet.
     AnlandEglLayer *layer = m_outputs[0]->eglLayer();
     if (layer) {
-        layer->importBuffers(get_buf_count(m_display));
+        if (!layer->importBuffers(get_buf_count(m_display))) {
+            // Buffer import failed (SIGBUS-prone dmabufs or bad EGL state).
+            // Re-enter fallback and retry later instead of crashing.
+            m_reconnectFailCount++;
+            qCWarning(KWIN_ANLAND) << "buffer import failed on reconnect"
+                                    << "(" << m_reconnectFailCount << "/" << s_maxReconnectFails << "),"
+                                    << "re-entering fallback";
+            if (m_reconnectFailCount >= s_maxReconnectFails) {
+                qCWarning(KWIN_ANLAND) << "max reconnect failures reached, giving up";
+                return;
+            }
+            enterFallback();
+            return;
+        }
     }
+    // Success — reset fail counter
+    m_reconnectFailCount = 0;
     setupNotifiers();
     // Attach the fresh audio socket (a new socketpair was installed by pickup_fds).
     anland_audio_set_fd(get_audio_fd(m_display));

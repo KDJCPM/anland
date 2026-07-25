@@ -18,25 +18,27 @@ jobs:
         run: |
           docker run --rm --platform linux/arm64 \
             -v ${{ github.workspace }}:/work \
+            -v ${{ github.workspace }}/debs:/debs \
             -w /work/producers/kde/ubuntu2604_v5 \
             debian:trixie bash -c '
               set -e
               export DEBIAN_FRONTEND=noninteractive
               apt-get update -qq
               apt-get install -y -qq curl git sudo devscripts dpkg-dev debhelper fakeroot
-              # Enable deb-src
               sed -i "s/^Types: deb$/Types: deb deb-src/" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
               sed -i "s/^deb /deb-src deb /" /etc/apt/sources.list 2>/dev/null || true
               apt-get update -qq
               chmod +x build.sh
               ./build.sh
-            ' 2>&1 | tail -50
+              mkdir -p /debs
+              cp ~/anland-debbuild/kwin/*.deb /debs/ 2>/dev/null || true
+              cp ~/anland-debbuild/xwayland/*.deb /debs/ 2>/dev/null || true
+              ls -la /debs/
+            ' 2>&1 | tail -30
 
       - name: Upload debs
         uses: actions/upload-artifact@v4
         with:
           name: patched-kwin-debs
-          path: |
-            ~/anland-debbuild/kwin/*.deb
-            ~/anland-debbuild/xwayland/*.deb
+          path: debs/*.deb
           if-no-files-found: warn

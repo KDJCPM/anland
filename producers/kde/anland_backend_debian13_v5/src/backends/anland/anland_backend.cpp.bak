@@ -484,11 +484,7 @@ void AnlandBackend::onReconnectTimer()
     // balanced regardless of whether the GL layer is attached yet.
     AnlandEglLayer *layer = m_outputs[0]->eglLayer();
     if (layer) {
-        if (!layer->importBuffers(get_buf_count(m_display))) {
-            qCWarning(KWIN_ANLAND) << "buffer import failed on reconnect, re-entering fallback";
-            enterFallback();
-            return;
-        }
+        layer->importBuffers(get_buf_count(m_display));
     }
     setupNotifiers();
     // Attach the fresh audio socket (a new socketpair was installed by pickup_fds).

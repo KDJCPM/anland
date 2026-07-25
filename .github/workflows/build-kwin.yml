@@ -19,22 +19,20 @@ jobs:
           docker run --rm --platform linux/arm64 \
             -v ${{ github.workspace }}:/work \
             -v ${{ github.workspace }}/debs:/debs \
-            -w /work/producers/kde/ubuntu2604_v5 \
+            -w /work/producers/kde \
             debian:trixie bash -c '
               set -e
               export DEBIAN_FRONTEND=noninteractive
               apt-get update -qq
               apt-get install -y -qq curl git sudo devscripts dpkg-dev debhelper fakeroot
-              sed -i "s/^Types: deb$/Types: deb deb-src/" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
-              sed -i "s/^deb /deb-src deb /" /etc/apt/sources.list 2>/dev/null || true
-              apt-get update -qq
-              chmod +x build.sh
+              chmod +x Debian13_v5/build.sh
+              cd Debian13_v5
               ./build.sh
               mkdir -p /debs
               cp ~/anland-debbuild/kwin/*.deb /debs/ 2>/dev/null || true
               cp ~/anland-debbuild/xwayland/*.deb /debs/ 2>/dev/null || true
               ls -la /debs/
-            ' 2>&1 | tail -30
+            ' 2>&1 | tail -50
 
       - name: Upload debs
         uses: actions/upload-artifact@v4

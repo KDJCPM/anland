@@ -24,19 +24,19 @@ jobs:
               export DEBIAN_FRONTEND=noninteractive
               apt-get update -qq
               apt-get install -y -qq curl git sudo devscripts dpkg-dev debhelper fakeroot
+              # Enable deb-src
+              sed -i "s/^Types: deb$/Types: deb deb-src/" /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+              sed -i "s/^deb /deb-src deb /" /etc/apt/sources.list 2>/dev/null || true
+              apt-get update -qq
               chmod +x build.sh
               ./build.sh
-            '
-
-      - name: Collect .deb files
-        run: |
-          mkdir -p debs
-          find ${{ github.workspace }} -name "*.deb" -path "*/anland-debbuild/*" -exec cp {} debs/ \; 2>/dev/null || true
-          ls -la debs/
+            ' 2>&1 | tail -50
 
       - name: Upload debs
         uses: actions/upload-artifact@v4
         with:
           name: patched-kwin-debs
-          path: debs/*.deb
+          path: |
+            ~/anland-debbuild/kwin/*.deb
+            ~/anland-debbuild/xwayland/*.deb
           if-no-files-found: warn

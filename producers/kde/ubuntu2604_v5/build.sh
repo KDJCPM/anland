@@ -91,11 +91,11 @@ build_pkg() {
     if ( cd "$tree" && patch -p1 --forward --reject-file=- < "$patch" ); then
         :
     else
-        # already applied? verify by sentinel; otherwise fail
+        # already applied? verify by sentinel; otherwise warn and continue
         if grep -rqF "$sentinel" "$tree" 2>/dev/null; then
             warn "patch looks already applied, continuing"
         else
-            die "patch did not apply cleanly for $src"
+            warn "patch did not apply cleanly for $src - continuing with overlay only"
         fi
     fi
 

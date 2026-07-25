@@ -87,23 +87,25 @@ build_pkg() {
     tree="$(find "$WORKDIR/$src" -maxdepth 1 -type d -name "${src}-*" | head -1)"
     [ -n "$tree" ] || die "could not find unpacked source tree for $src"
 
-    log "Applying patch: $patch -> $tree"
-    if ( cd "$tree" && patch -p1 --forward --reject-file=- < "$patch" ); then
-        :
-    else
-        # already applied? verify by sentinel; otherwise warn and continue
-        if grep -rqF "$sentinel" "$tree" 2>/dev/null; then
-            warn "patch looks already applied, continuing"
-        else
-            warn "patch did not apply cleanly for $src - continuing with overlay only"
-        fi
-    fi
-
-    # ---- overlay: copy local overrides into the source tree (AFTER patch) ------
+    # ---- overlay: copy local overrides into the source tree ------
     local overlay_dir="$SCRIPT_DIR/$src"
     if [ -d "$overlay_dir" ]; then
         log "Overlaying '$overlay_dir' -> $tree (overwrite-merge)"
         cp -a "$overlay_dir/." "$tree/"
+    fi
+
+    # ---- apply anland-specific changes (replaces fragile kwin.patch) ------
+    local anland_script="$SCRIPT_DIR/apply-anland-changes.sh"
+    if [ -f "$anland_script" ]; then
+        log "Applying anland changes via script"
+        bash "$anland_script" "$tree"
+    else
+        log "Applying patch: $patch -> $tree"
+        if ( cd "$tree" && patch -p1 --forward --reject-file=- < "$patch" ); then
+            :
+        else
+            warn "patch did not apply cleanly for $src - continuing with overlay only"
+        fi
     fi
 
     log "Building '$src' (.deb, keeping official version)"
